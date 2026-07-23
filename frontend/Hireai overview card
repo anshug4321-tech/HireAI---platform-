@@ -1,0 +1,351 @@
+import React from 'react';
+import { motion } from 'framer-motion';
+
+// ============================================================================
+// 1. TYPES & INTERFACES
+// ============================================================================
+
+export type TrendDirection = 'up' | 'down' | 'neutral';
+
+export interface StatTrend {
+  value: string;
+  label: string;
+  direction: TrendDirection;
+}
+
+export interface OverviewCardProps {
+  id: string;
+  title: string;
+  value: string | number;
+  subtitle?: string;
+  icon: React.ComponentType<{ className?: string }>;
+  trend?: StatTrend;
+  accentColor: 'indigo' | 'emerald' | 'amber' | 'sky' | 'rose' | 'purple';
+  progress?: number; // 0 to 100 for AI Score or Percentage metrics
+  badgeText?: string;
+  onClick?: () => void;
+}
+
+export interface HireAIOverviewCardsProps {
+  isLoading?: boolean;
+  cardsData?: OverviewCardProps[];
+  onCardClick?: (cardId: string) => void;
+}
+
+// ============================================================================
+// 2. COLOR MAPS & CONFIGURATIONS
+// ============================================================================
+
+const colorStyles = {
+  indigo: {
+    bgLight: 'bg-indigo-50/80 hover:bg-indigo-100/60',
+    bgDark: 'dark:bg-indigo-950/30 dark:hover:bg-indigo-900/40',
+    iconBg: 'bg-indigo-600/10 text-indigo-600 dark:bg-indigo-400/10 dark:text-indigo-400',
+    bar: 'bg-indigo-600 dark:bg-indigo-500',
+    badge: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/80 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800/50',
+    border: 'border-slate-200 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-700',
+  },
+  emerald: {
+    bgLight: 'bg-emerald-50/80 hover:bg-emerald-100/60',
+    bgDark: 'dark:bg-emerald-950/30 dark:hover:bg-emerald-900/40',
+    iconBg: 'bg-emerald-600/10 text-emerald-600 dark:bg-emerald-400/10 dark:text-emerald-400',
+    bar: 'bg-emerald-600 dark:bg-emerald-500',
+    badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/50',
+    border: 'border-slate-200 dark:border-slate-800 hover:border-emerald-300 dark:hover:border-emerald-700',
+  },
+  amber: {
+    bgLight: 'bg-amber-50/80 hover:bg-amber-100/60',
+    bgDark: 'dark:bg-amber-950/30 dark:hover:bg-amber-900/40',
+    iconBg: 'bg-amber-600/10 text-amber-600 dark:bg-amber-400/10 dark:text-amber-400',
+    bar: 'bg-amber-600 dark:bg-amber-500',
+    badge: 'bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300 border-amber-200 dark:border-amber-800/50',
+    border: 'border-slate-200 dark:border-slate-800 hover:border-amber-300 dark:hover:border-amber-700',
+  },
+  sky: {
+    bgLight: 'bg-sky-50/80 hover:bg-sky-100/60',
+    bgDark: 'dark:bg-sky-950/30 dark:hover:bg-sky-900/40',
+    iconBg: 'bg-sky-600/10 text-sky-600 dark:bg-sky-400/10 dark:text-sky-400',
+    bar: 'bg-sky-600 dark:bg-sky-500',
+    badge: 'bg-sky-100 text-sky-700 dark:bg-sky-950/80 dark:text-sky-300 border-sky-200 dark:border-sky-800/50',
+    border: 'border-slate-200 dark:border-slate-800 hover:border-sky-300 dark:hover:border-sky-700',
+  },
+  rose: {
+    bgLight: 'bg-rose-50/80 hover:bg-rose-100/60',
+    bgDark: 'dark:bg-rose-950/30 dark:hover:bg-rose-900/40',
+    iconBg: 'bg-rose-600/10 text-rose-600 dark:bg-rose-400/10 dark:text-rose-400',
+    bar: 'bg-rose-600 dark:bg-rose-500',
+    badge: 'bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300 border-rose-200 dark:border-rose-800/50',
+    border: 'border-slate-200 dark:border-slate-800 hover:border-rose-300 dark:hover:border-rose-700',
+  },
+  purple: {
+    bgLight: 'bg-purple-50/80 hover:bg-purple-100/60',
+    bgDark: 'dark:bg-purple-950/30 dark:hover:bg-purple-900/40',
+    iconBg: 'bg-purple-600/10 text-purple-600 dark:bg-purple-400/10 dark:text-purple-400',
+    bar: 'bg-purple-600 dark:bg-purple-500',
+    badge: 'bg-purple-100 text-purple-700 dark:bg-purple-950/80 dark:text-purple-300 border-purple-200 dark:border-purple-800/50',
+    border: 'border-slate-200 dark:border-slate-800 hover:border-purple-300 dark:hover:border-purple-700',
+  },
+};
+
+// ============================================================================
+// 3. SVG ICONS
+// ============================================================================
+
+const SparklesIcon: React.FC<{ className?: string }> = ({ className = 'h-5 w-5' }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+  </svg>
+);
+
+const BriefcaseIcon: React.FC<{ className?: string }> = ({ className = 'h-5 w-5' }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+  </svg>
+);
+
+const CalendarCheckIcon: React.FC<{ className?: string }> = ({ className = 'h-5 w-5' }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+  </svg>
+);
+
+const AwardIcon: React.FC<{ className?: string }> = ({ className = 'h-5 w-5' }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+  </svg>
+);
+
+const ArrowUpRightIcon: React.FC<{ className?: string }> = ({ className = 'h-3.5 w-3.5' }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 19L19 5M19 5H10M19 5V14" />
+  </svg>
+);
+
+const ArrowDownRightIcon: React.FC<{ className?: string }> = ({ className = 'h-3.5 w-3.5' }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 5l14 14m0 0H10m9 0V10" />
+  </svg>
+);
+
+// ============================================================================
+// 4. LOADING SKELETON
+// ============================================================================
+
+export const CardSkeleton: React.FC = () => (
+  <div className="animate-pulse rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <div className="flex items-center justify-between">
+      <div className="h-4 w-28 rounded bg-slate-200 dark:bg-slate-800" />
+      <div className="h-10 w-10 rounded-xl bg-slate-200 dark:bg-slate-800" />
+    </div>
+    <div className="mt-4 h-8 w-20 rounded bg-slate-200 dark:bg-slate-800" />
+    <div className="mt-3 flex items-center space-x-2">
+      <div className="h-4 w-12 rounded bg-slate-200 dark:bg-slate-800" />
+      <div className="h-3 w-24 rounded bg-slate-200 dark:bg-slate-800" />
+    </div>
+    <div className="mt-4 h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-800" />
+  </div>
+);
+
+// ============================================================================
+// 5. REUSABLE STAT CARD COMPONENT
+// ============================================================================
+
+const OverviewCard: React.FC<OverviewCardProps> = ({
+  id,
+  title,
+  value,
+  subtitle,
+  icon: IconComponent,
+  trend,
+  accentColor,
+  progress,
+  badgeText,
+  onClick,
+}) => {
+  const styles = colorStyles[accentColor] || colorStyles.indigo;
+
+  return (
+    <motion.div
+      whileHover={{ y: -3, transition: { duration: 0.2 } }}
+      whileTap={{ scale: 0.98 }}
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      tabIndex={0}
+      role="button"
+      aria-label={`${title}: ${value}. ${subtitle || ''}`}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
+      className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border bg-white p-5 shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:bg-slate-900 ${styles.border}`}
+    >
+      <div>
+        {/* Card Header: Title & Icon */}
+        <div className="flex items-start justify-between space-x-3">
+          <div className="flex flex-col space-y-1">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              {title}
+            </span>
+            {badgeText && (
+              <span
+                className={`inline-flex w-fit items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${styles.badge}`}
+              >
+                {badgeText}
+              </span>
+            )}
+          </div>
+          <div
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors ${styles.iconBg}`}
+          >
+            <IconComponent className="h-5 w-5" />
+          </div>
+        </div>
+
+        {/* Card Value */}
+        <div className="mt-3 flex items-baseline justify-between">
+          <span className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
+            {value}
+          </span>
+        </div>
+
+        {/* Trend & Subtitle */}
+        <div className="mt-2 flex items-center space-x-2">
+          {trend && (
+            <span
+              className={`inline-flex items-center space-x-0.5 text-xs font-bold ${
+                trend.direction === 'up'
+                  ? 'text-emerald-600 dark:text-emerald-400'
+                  : trend.direction === 'down'
+                  ? 'text-rose-600 dark:text-rose-400'
+                  : 'text-slate-500 dark:text-slate-400'
+              }`}
+            >
+              {trend.direction === 'up' && <ArrowUpRightIcon />}
+              {trend.direction === 'down' && <ArrowDownRightIcon />}
+              <span>{trend.value}</span>
+            </span>
+          )}
+
+          {subtitle && (
+            <span className="text-xs text-slate-500 dark:text-slate-400 truncate">
+              {subtitle}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Progress Bar (if provided) */}
+      {typeof progress === 'number' && (
+        <div className="mt-4 pt-2">
+          <div className="flex items-center justify-between text-[11px] font-medium text-slate-400">
+            <span>Score Efficiency</span>
+            <span>{progress}%</span>
+          </div>
+          <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 0.8, delay: 0.2, ease: 'easeOut' }}
+              className={`h-full rounded-full ${styles.bar}`}
+            />
+          </div>
+        </div>
+      )}
+    </motion.div>
+  );
+};
+
+// ============================================================================
+// 6. DEFAULT DATA SETTINGS
+// ============================================================================
+
+const defaultCards: OverviewCardProps[] = [
+  {
+    id: 'ai-match-score',
+    title: 'AI Match Score',
+    value: '88.4%',
+    subtitle: 'vs last month average',
+    icon: SparklesIcon,
+    accentColor: 'indigo',
+    progress: 88,
+    badgeText: 'AI Powered',
+    trend: {
+      value: '+4.2%',
+      label: 'increase',
+      direction: 'up',
+    },
+  },
+  {
+    id: 'active-jobs',
+    title: 'Active Job Requisitions',
+    value: '24',
+    subtitle: '3 high priority openings',
+    icon: BriefcaseIcon,
+    accentColor: 'sky',
+    badgeText: '182 applicants',
+    trend: {
+      value: '+2',
+      label: 'new today',
+      direction: 'up',
+    },
+  },
+  {
+    id: 'today-interviews',
+    title: "Today's Interviews",
+    value: '8',
+    subtitle: '3 completed, 2 pre-screens pending',
+    icon: CalendarCheckIcon,
+    accentColor: 'amber',
+    trend: {
+      value: '100%',
+      label: 'on schedule',
+      direction: 'neutral',
+    },
+  },
+  {
+    id: 'hiring-success',
+    title: 'Hiring Success Rate',
+    value: '92.6%',
+    subtitle: 'Offer acceptance velocity',
+    icon: AwardIcon,
+    accentColor: 'emerald',
+    progress: 92,
+    trend: {
+      value: '+5.1%',
+      label: 'quarterly growth',
+      direction: 'up',
+    },
+  },
+];
+
+// ============================================================================
+// 7. MAIN EXPORTED OVERVIEW CARDS GRID
+// ============================================================================
+
+export const HireAIOverviewCards: React.FC<HireAIOverviewCardsProps> = ({
+  isLoading = false,
+  cardsData = defaultCards,
+  onCardClick,
+}) => {
+  return (
+    <section aria-label="Dashboard Performance Overview" className="w-full">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
+        {isLoading
+          ? Array.from({ length: 4 }).map((_, idx) => <CardSkeleton key={idx} />)
+          : cardsData.map((card) => (
+              <OverviewCard
+                key={card.id}
+                {...card}
+                onClick={() => onCardClick?.(card.id)}
+              />
+            ))}
+      </div>
+    </section>
+  );
+};
+
+export default HireAIOverviewCards;
