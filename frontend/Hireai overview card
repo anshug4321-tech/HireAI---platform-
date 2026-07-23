@@ -1,5 +1,14 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useMemo, useEffect } from 'react';
+import { motion, useSpring, useTransform } from 'framer-motion';
+import {
+  Sparkles,
+  Briefcase,
+  CalendarCheck,
+  Award,
+  ArrowUpRight,
+  ArrowDownRight,
+  LucideIcon,
+} from 'lucide-react';
 
 // ============================================================================
 // 1. TYPES & INTERFACES
@@ -18,7 +27,7 @@ export interface OverviewCardProps {
   title: string;
   value: string | number;
   subtitle?: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: LucideIcon | React.ComponentType<{ className?: string }>;
   trend?: StatTrend;
   accentColor: 'indigo' | 'emerald' | 'amber' | 'sky' | 'rose' | 'purple';
   progress?: number; // 0 to 100 for AI Score or Percentage metrics
@@ -33,8 +42,11 @@ export interface HireAIOverviewCardsProps {
 }
 
 // ============================================================================
-// 2. COLOR MAPS & CONFIGURATIONS
+// 2. UTILS & COLOR MAPS
 // ============================================================================
+
+const clamp = (val: number, min = 0, max = 100): number =>
+  Math.min(Math.max(val, min), max);
 
 const colorStyles = {
   indigo: {
@@ -85,53 +97,50 @@ const colorStyles = {
     badge: 'bg-purple-100 text-purple-700 dark:bg-purple-950/80 dark:text-purple-300 border-purple-200 dark:border-purple-800/50',
     border: 'border-slate-200 dark:border-slate-800 hover:border-purple-300 dark:hover:border-purple-700',
   },
-};
+} as const;
 
 // ============================================================================
-// 3. SVG ICONS
+// 3. ANIMATED COUNT UP COMPONENT
 // ============================================================================
 
-const SparklesIcon: React.FC<{ className?: string }> = ({ className = 'h-5 w-5' }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-  </svg>
-);
+const AnimatedValue: React.FC<{ value: string | number }> = React.memo(({ value }) => {
+  const parsedValue = useMemo(() => {
+    if (typeof value === 'number') return { numeric: value, prefix: '', suffix: '', decimals: 0 };
+    const match = value.match(/^([^\d-]*)([-+]?\d*\.?\d+)(.*)$/);
+    if (!match) return null;
+    const [, prefix, numStr, suffix] = match;
+    const num = parseFloat(numStr);
+    const decimals = numStr.includes('.') ? numStr.split('.')[1].length : 0;
+    return { numeric: num, prefix, suffix, decimals };
+  }, [value]);
 
-const BriefcaseIcon: React.FC<{ className?: string }> = ({ className = 'h-5 w-5' }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-  </svg>
-);
+  const spring = useSpring(0, { mass: 0.8, stiffness: 75, damping: 15 });
+  const animatedText = useTransform(spring, (latest) => {
+    if (!parsedValue) return String(value);
+    const { prefix, suffix, decimals } = parsedValue;
+    return `${prefix}${latest.toFixed(decimals)}${suffix}`;
+  });
 
-const CalendarCheckIcon: React.FC<{ className?: string }> = ({ className = 'h-5 w-5' }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-  </svg>
-);
+  useEffect(() => {
+    if (parsedValue) {
+      spring.set(parsedValue.numeric);
+    }
+  }, [parsedValue, spring]);
 
-const AwardIcon: React.FC<{ className?: string }> = ({ className = 'h-5 w-5' }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-  </svg>
-);
+  if (!parsedValue) {
+    return <span>{value}</span>;
+  }
 
-const ArrowUpRightIcon: React.FC<{ className?: string }> = ({ className = 'h-3.5 w-3.5' }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 19L19 5M19 5H10M19 5V14" />
-  </svg>
-);
+  return <motion.span>{animatedText}</motion.span>;
+});
 
-const ArrowDownRightIcon: React.FC<{ className?: string }> = ({ className = 'h-3.5 w-3.5' }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 5l14 14m0 0H10m9 0V10" />
-  </svg>
-);
+AnimatedValue.displayName = 'AnimatedValue';
 
 // ============================================================================
 // 4. LOADING SKELETON
 // ============================================================================
 
-export const CardSkeleton: React.FC = () => (
+export const CardSkeleton: React.FC = React.memo(() => (
   <div className="animate-pulse rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
     <div className="flex items-center justify-between">
       <div className="h-4 w-28 rounded bg-slate-200 dark:bg-slate-800" />
@@ -144,14 +153,15 @@ export const CardSkeleton: React.FC = () => (
     </div>
     <div className="mt-4 h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-800" />
   </div>
-);
+));
+
+CardSkeleton.displayName = 'CardSkeleton';
 
 // ============================================================================
 // 5. REUSABLE STAT CARD COMPONENT
 // ============================================================================
 
-const OverviewCard: React.FC<OverviewCardProps> = ({
-  id,
+const OverviewCard: React.FC<OverviewCardProps> = React.memo(({
   title,
   value,
   subtitle,
@@ -163,6 +173,10 @@ const OverviewCard: React.FC<OverviewCardProps> = ({
   onClick,
 }) => {
   const styles = colorStyles[accentColor] || colorStyles.indigo;
+  const clampedProgress = useMemo(
+    () => (typeof progress === 'number' ? clamp(progress, 0, 100) : undefined),
+    [progress]
+  );
 
   return (
     <motion.div
@@ -201,14 +215,14 @@ const OverviewCard: React.FC<OverviewCardProps> = ({
           <div
             className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors ${styles.iconBg}`}
           >
-            <IconComponent className="h-5 w-5" />
+            <IconComponent className="h-5 w-5" aria-hidden="true" />
           </div>
         </div>
 
-        {/* Card Value */}
+        {/* Card Value with CountUp Animation */}
         <div className="mt-3 flex items-baseline justify-between">
           <span className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
-            {value}
+            <AnimatedValue value={value} />
           </span>
         </div>
 
@@ -224,8 +238,8 @@ const OverviewCard: React.FC<OverviewCardProps> = ({
                   : 'text-slate-500 dark:text-slate-400'
               }`}
             >
-              {trend.direction === 'up' && <ArrowUpRightIcon />}
-              {trend.direction === 'down' && <ArrowDownRightIcon />}
+              {trend.direction === 'up' && <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />}
+              {trend.direction === 'down' && <ArrowDownRight className="h-3.5 w-3.5" aria-hidden="true" />}
               <span>{trend.value}</span>
             </span>
           )}
@@ -238,17 +252,17 @@ const OverviewCard: React.FC<OverviewCardProps> = ({
         </div>
       </div>
 
-      {/* Progress Bar (if provided) */}
-      {typeof progress === 'number' && (
+      {/* Progress Bar (Clamped 0-100) */}
+      {typeof clampedProgress === 'number' && (
         <div className="mt-4 pt-2">
           <div className="flex items-center justify-between text-[11px] font-medium text-slate-400">
             <span>Score Efficiency</span>
-            <span>{progress}%</span>
+            <span>{clampedProgress}%</span>
           </div>
           <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
             <motion.div
               initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
+              animate={{ width: `${clampedProgress}%` }}
               transition={{ duration: 0.8, delay: 0.2, ease: 'easeOut' }}
               className={`h-full rounded-full ${styles.bar}`}
             />
@@ -257,7 +271,9 @@ const OverviewCard: React.FC<OverviewCardProps> = ({
       )}
     </motion.div>
   );
-};
+});
+
+OverviewCard.displayName = 'OverviewCard';
 
 // ============================================================================
 // 6. DEFAULT DATA SETTINGS
@@ -269,9 +285,9 @@ const defaultCards: OverviewCardProps[] = [
     title: 'AI Match Score',
     value: '88.4%',
     subtitle: 'vs last month average',
-    icon: SparklesIcon,
+    icon: Sparkles,
     accentColor: 'indigo',
-    progress: 88,
+    progress: 88.4,
     badgeText: 'AI Powered',
     trend: {
       value: '+4.2%',
@@ -284,7 +300,7 @@ const defaultCards: OverviewCardProps[] = [
     title: 'Active Job Requisitions',
     value: '24',
     subtitle: '3 high priority openings',
-    icon: BriefcaseIcon,
+    icon: Briefcase,
     accentColor: 'sky',
     badgeText: '182 applicants',
     trend: {
@@ -298,7 +314,7 @@ const defaultCards: OverviewCardProps[] = [
     title: "Today's Interviews",
     value: '8',
     subtitle: '3 completed, 2 pre-screens pending',
-    icon: CalendarCheckIcon,
+    icon: CalendarCheck,
     accentColor: 'amber',
     trend: {
       value: '100%',
@@ -311,9 +327,9 @@ const defaultCards: OverviewCardProps[] = [
     title: 'Hiring Success Rate',
     value: '92.6%',
     subtitle: 'Offer acceptance velocity',
-    icon: AwardIcon,
+    icon: Award,
     accentColor: 'emerald',
-    progress: 92,
+    progress: 92.6,
     trend: {
       value: '+5.1%',
       label: 'quarterly growth',
@@ -326,7 +342,7 @@ const defaultCards: OverviewCardProps[] = [
 // 7. MAIN EXPORTED OVERVIEW CARDS GRID
 // ============================================================================
 
-export const HireAIOverviewCards: React.FC<HireAIOverviewCardsProps> = ({
+export const HireAIOverviewCards: React.FC<HireAIOverviewCardsProps> = React.memo(({
   isLoading = false,
   cardsData = defaultCards,
   onCardClick,
@@ -335,7 +351,7 @@ export const HireAIOverviewCards: React.FC<HireAIOverviewCardsProps> = ({
     <section aria-label="Dashboard Performance Overview" className="w-full">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
         {isLoading
-          ? Array.from({ length: 4 }).map((_, idx) => <CardSkeleton key={idx} />)
+          ? Array.from({ length: 4 }).map((_, idx) => <CardSkeleton key={`skeleton-${idx}`} />)
           : cardsData.map((card) => (
               <OverviewCard
                 key={card.id}
@@ -346,6 +362,8 @@ export const HireAIOverviewCards: React.FC<HireAIOverviewCardsProps> = ({
       </div>
     </section>
   );
-};
+});
+
+HireAIOverviewCards.displayName = 'HireAIOverviewCards';
 
 export default HireAIOverviewCards;
